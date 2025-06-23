@@ -5,6 +5,9 @@ import requests
 import json
 import os
 import ctypes
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class PromptEnhancerApp:
     def __init__(self, root):
@@ -14,7 +17,8 @@ class PromptEnhancerApp:
         self.root.minsize(420, 180)
         self.root.configure(bg="#1e1e1e")
         self.root.attributes('-alpha', 0.92)
-        
+        self.root = root
+        self.root.title("Prompt Enhancer")
         # Remove window decorations (title bar, minimize, maximize, close buttons)
         # self.root.overrideredirect(True)  # Commented out so app appears in taskbar
         
@@ -48,7 +52,7 @@ class PromptEnhancerApp:
         self.root.bind('<Configure>', self.on_window_resize)
         
         # Gemini API key (you'll need to set this)
-        self.api_key = os.getenv('GEMINI_API_KEY', 'AIzaSyDRl2PR0JF8LhYFTZqzv8nqp2vp54tKfw4')
+        self.api_key = os.getenv('GEMINI_API_KEY')
         
     def setup_styles(self):
         style = ttk.Style()
@@ -71,8 +75,8 @@ class PromptEnhancerApp:
         self.main_frame = main_frame
         
         # Title bar area (for dragging and close button)
-        title_frame = tk.Frame(main_frame, bg=self.bg_color)
-        title_frame.pack(fill=tk.X, pady=(0, 10))
+        # title_frame = tk.Frame(main_frame, bg=self.bg_color)
+        # title_frame.pack(fill=tk.X, pady=(0, 10))
         
         # # Title (make it draggable)
         # title_label = tk.Label(title_frame, 
@@ -280,7 +284,7 @@ class PromptEnhancerApp:
                 visual_lines += max(1, len(line) // chars_per_line + (1 if len(line) % chars_per_line else 0))
         
         # Ensure we stay within min/max bounds
-        new_height = max(min_height, min(visual_lines + 1, max_height))
+        new_height = max(min_height, visual_lines + 1)
         
         # Only update if height changed
         current_height = int(text_widget['height'])
