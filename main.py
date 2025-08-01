@@ -43,16 +43,16 @@ class PromptEnhancerApp:
         self.button_bg = "#404040"
         self.button_hover = "#505050"
         
+        # Gemini API key (you'll need to set this)
+        self.api_key = os.getenv('GEMINI_API_KEY')
+        self.prompt_template = "Generate an enhanced version of this prompt (reply with only the enhanced prompt - no conversation, explanations, lead-in, bullet points, placeholders, markdown formatting, or surrounding quotes. maintaining a comparable level of detail, length and complexity as the original input prompt while focusing on improving clarity, specificity, and potential for generating high-quality outputs.):\n\n{user_input}"
         # Configure style for ttk widgets
         self.setup_styles()
-        # Create GUI elements
-        self.create_widgets()
+        # Create notebook tabs
+        self.create_notebook_tabs()
         
         # Bind window resize event to recalculate text heights
         self.root.bind('<Configure>', self.on_window_resize)
-        
-        # Gemini API key (you'll need to set this)
-        self.api_key = os.getenv('GEMINI_API_KEY')
         
     def setup_styles(self):
         style = ttk.Style()
@@ -66,43 +66,25 @@ class PromptEnhancerApp:
         style.map('Dark.TButton',
                  background=[('active', self.button_hover),
                            ('pressed', '#606060')])
-    
-    def create_widgets(self):
-        # Main frame
-        main_frame = tk.Frame(self.root, bg=self.bg_color, width=self.fixed_width)
-        main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
-        main_frame.pack_propagate(False)
-        self.main_frame = main_frame
-        
-        # Title bar area (for dragging and close button)
-        # title_frame = tk.Frame(main_frame, bg=self.bg_color)
-        # title_frame.pack(fill=tk.X, pady=(0, 10))
-        
-        # # Title (make it draggable)
-        # title_label = tk.Label(title_frame, 
-        #                       text="Prompt Enhancer", 
-        #                       font=("Segoe UI", 16, "bold"),
-        #                       fg=self.fg_color, 
-        #                       bg=self.bg_color,
-        #                       cursor="fleur")  # Show drag cursor
-        # title_label.pack(side=tk.LEFT, pady=(0, 10))
-        
-        # # Bind drag events to title
-        # title_label.bind('<Button-1>', self.start_drag)
-        # title_label.bind('<B1-Motion>', self.drag_window)
-        
-        # # Close button
-        # close_button = tk.Label(title_frame,
-        #                        text="✕",
-        #                        font=("Segoe UI", 12, "bold"),
-        #                        fg="#ff4444",
-        #                        bg=self.bg_color,
-        #                        cursor="hand2")
-        # close_button.pack(side=tk.RIGHT)
-        # close_button.bind('<Button-1>', lambda e: self.root.quit())
-        # close_button.bind('<Enter>', lambda e: close_button.config(fg="#ff6666"))
-        # close_button.bind('<Leave>', lambda e: close_button.config(fg="#ff4444"))
-        
+
+    def create_notebook_tabs(self):
+        # Create the notebook (tabbed interface)
+        self.notebook = ttk.Notebook(self.root)
+        self.notebook.pack(fill=tk.BOTH, expand=True, padx=0, pady=0)
+        # Main tab
+        self.main_frame = tk.Frame(self.notebook, bg=self.bg_color, width=self.fixed_width)
+        self.main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+        self.main_frame.pack_propagate(False)
+        self.create_main_tab_widgets(self.main_frame)
+        self.notebook.add(self.main_frame, text="Main")
+        # Settings tab
+        self.settings_frame = tk.Frame(self.notebook, bg=self.bg_color, width=self.fixed_width)
+        self.settings_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+        self.settings_frame.pack_propagate(False)
+        self.create_settings_tab_widgets(self.settings_frame)
+        self.notebook.add(self.settings_frame, text="Settings")
+
+    def create_main_tab_widgets(self, main_frame):
         # Input section
         input_label = tk.Label(main_frame, 
                               text="Enter your prompt:", 
@@ -191,6 +173,28 @@ class PromptEnhancerApp:
         self.copy_frame = copy_frame
         # self.copy_button.pack(side=tk.RIGHT)  # Do not pack yet
         
+    def create_settings_tab_widgets(self, settings_frame):
+        # Gemini API Key
+        api_label = tk.Label(settings_frame, text="Gemini API Key:", font=("Segoe UI", 11), fg=self.fg_color, bg=self.bg_color)
+        api_label.pack(anchor='w', pady=(10, 2))
+        self.api_entry = tk.Entry(settings_frame, font=("Consolas", 11), bg=self.entry_bg, fg=self.fg_color, insertbackground=self.fg_color, relief='flat', width=50)
+        self.api_entry.pack(fill=tk.X, pady=(0, 10))
+        self.api_entry.insert(0, self.api_key or "")
+        # Prompt Template
+        prompt_label = tk.Label(settings_frame, text="Prompt Template:", font=("Segoe UI", 11), fg=self.fg_color, bg=self.bg_color)
+        prompt_label.pack(anchor='w', pady=(10, 2))
+        self.prompt_entry = scrolledtext.ScrolledText(settings_frame, height=10, font=("Consolas", 11), bg=self.entry_bg, fg=self.fg_color, insertbackground=self.fg_color, relief='flat', wrap=tk.WORD)
+        self.prompt_entry.pack(fill=tk.X, pady=(0, 10))
+        self.prompt_entry.insert(1.0, self.prompt_template)
+        # Save button
+        save_btn = ttk.Button(settings_frame, text="Save Settings", style='Dark.TButton', command=self.save_settings)
+        save_btn.pack(pady=(10, 0))
+
+    def save_settings(self):
+        self.api_key = self.api_entry.get().strip()
+        self.prompt_template = self.prompt_entry.get(1.0, tk.END).strip()
+        self.status_label.config(text="Settings saved!", fg="#00aa00")
+
     def enhance_prompt(self):
         user_input = self.input_text.get(1.0, tk.END).strip()
         
@@ -199,7 +203,7 @@ class PromptEnhancerApp:
             return
             
         if not self.api_key:
-            messagebox.showerror("Error", "Please set your GEMINI_API_KEY environment variable.")
+            messagebox.showerror("Error", "Please set your GEMINI_API_KEY in Settings.")
             return
         
         # Disable button and show status
@@ -217,7 +221,7 @@ class PromptEnhancerApp:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={self.api_key}"
             
             # Prepare the prompt
-            prompt = f"Generate an enhanced version of this prompt (reply with only the enhanced prompt - no conversation, explanations, lead-in, bullet points, placeholders, markdown formatting, or surrounding quotes. maintaining a comparable level of detail, length and complexity as the original input prompt while focusing on improving clarity, specificity, and potential for generating high-quality outputs.):\n\n{user_input}"
+            prompt = self.prompt_template.replace("{user_input}", user_input)
             
             # Request payload
             payload = {
@@ -257,6 +261,7 @@ class PromptEnhancerApp:
             self.root.after(0, self.update_output, f"Network error: {str(e)}", False)
         except Exception as e:
             self.root.after(0, self.update_output, f"Error: {str(e)}", False)
+    
     def adjust_text_height(self, text_widget, min_height=3, max_height=15):
         """Dynamically adjust the height of a text widget based on content"""
         content = text_widget.get(1.0, tk.END)

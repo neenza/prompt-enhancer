@@ -3,8 +3,10 @@ from tkinter import ttk, scrolledtext, messagebox, font
 import threading
 import requests
 import json
+
 import os
 import ctypes
+from dotenv import load_dotenv
 
 class PromptEnhancerApp:
     def __init__(self, root):
@@ -44,8 +46,10 @@ class PromptEnhancerApp:
         # Create GUI elements
         self.create_widgets()
         
-        # Gemini API key (you'll need to set this)
-        self.api_key = os.getenv('GEMINI_API_KEY', 'AIzaSyDRl2PR0JF8LhYFTZqzv8nqp2vp54tKfw4')
+        # Load environment variables from .env file
+        load_dotenv()
+        # Gemini API key (must be set in .env file)
+        self.api_key = os.getenv('GEMINI_API_KEY')
         
     def setup_styles(self):
         style = ttk.Style()
